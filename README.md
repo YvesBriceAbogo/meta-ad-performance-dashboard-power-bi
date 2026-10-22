@@ -79,4 +79,167 @@ The Power Query scripts, fully commented and documented, are in [`power-query/`]
 |---|---|
 | `ad_events` | CSV import via parameterized path, header promotion, column typing (Int64, datetime, text), Date column extracted from timestamp, Event Hour extracted from timestamp |
 | `ads` | CSV import, header promotion, column typing |
-| `campaigns` | CSV import, header promotion, decimal separator replacement 
+| `campaigns` | CSV import, header promotion, decimal separator replacement (`.` → `,`), column typing including budget as number |
+| `users` | CSV import, header promotion, column typing |
+
+All scripts use a `Path` parameter so file locations can be changed in one place.
+
+---
+
+## 6. Data Model
+
+Star schema: one fact table (`ad_events`), three dimension tables (`ads`, `users`, `Calendar`) and one campaign reference table. The `Select Dynamic Measure` table is a standalone field parameter.
+
+![Data model](images/data-model.png)
+
+| Relationship | Keys |
+|---|---|
+| `campaigns` → `ads` | `campaign_id` → `campaign_id` |
+| `ads` → `ad_events` | `ad_id` → `ad_id` |
+| `users` → `ad_events` | `user_id` → `user_id` |
+| `Calendar` → `ad_events` | `Date` → `Date` |
+
+Details in [`documentation/data-model.md`](documentation/data-model.md).
+
+---
+
+## 7. DAX Measures
+
+| Family | Measures |
+|---|---|
+| Event counts | Impressions, Clicks, Shares, Comments, Purchases, Likes |
+| Composite metric | Engagement (= Clicks + Shares + Comments) |
+| Rates | CTR (ClickThrough Rate), Engagement Rate, Conversion Rate, Purchase Rate |
+| Budget | Total Budget, Avg Budget per Campaign |
+| Dynamic display | Select Dynamic Measure (field parameter), Dynamic Title |
+| Calendar columns | Month Name, Year Month_num, Day Name, Month Day_num, Week Day_num, Year Week_num |
+
+Design notes:
+
+- rates use `DIVIDE` to safely handle zero denominators;
+- the `Calendar` table is generated with `CALENDAR(MIN, MAX)` from the fact table dates;
+- the field parameter allows the user to switch among six measures in a single visual.
+
+Full documentation in [`dax/`](dax/).
+
+---
+
+## 8. SQL Equivalents
+
+Equivalent MS SQL Server queries that reproduce the DAX logic are provided in [`sql/`](sql/). These queries demonstrate the same analytical calculations using standard SQL, suitable for environments where Power BI is not available.
+
+---
+
+## 9. Report Pages
+
+### Page 1 — Facebook
+
+Performance analysis for the Facebook platform. Twelve KPI cards, engagement breakdown by gender and age, world map by country, calendar matrix by month, weekly engagement trend by ad type, hourly engagement trend and performance table by ad type.
+
+![Dashboard — Facebook](images/dashboard-facebook.png)
+
+### Page 2 — Instagram
+
+Same layout filtered on Instagram, showing platform-specific performance differences.
+
+![Dashboard — Instagram](images/dashboard-instagram.png)
+
+**Slicers:** Platform (Facebook / Instagram buttons), Select Dynamic Measure, Campaign Name, Target Interest, Month Name.
+
+---
+
+## 10. Key Figures
+
+### Facebook
+
+| Indicator | Value |
+|---|---:|
+| Impressions | 216K |
+| Clicks | 25K |
+| Shares | 1.3K |
+| Comments | 2.6K |
+| Purchases | 1.3K |
+| Engagement | 29.3K |
+| CTR (ClickThrough Rate) | 11.76% |
+| Engagement Rate | 13.56% |
+| Conversion Rate | 5.21% |
+| Purchase Rate | 0.61% |
+| Total Budget | 2.54M |
+| Avg Budget per Campaign | 50.72K |
+
+### Instagram
+
+| Indicator | Value |
+|---|---:|
+| Impressions | 124K |
+| Clicks | 15K |
+| Shares | 682 |
+| Comments | 1.5K |
+| Purchases | 708 |
+| Engagement | 16.8K |
+| CTR | 11.86% |
+| Engagement Rate | 13.60% |
+| Conversion Rate | 4.82% |
+| Purchase Rate | 0.57% |
+| Total Budget | 2.54M |
+| Avg Budget per Campaign | 50.72K |
+
+---
+
+## 11. Findings
+
+### Facebook (Page 1)
+
+1. **Stories lead in volume.** Stories generate the most impressions (71.5K) and clicks (8.4K), with a CTR of 11.75% and an engagement rate of 13.61%.
+2. **Video delivers the highest CTR.** Despite the lowest impression count (45.8K), Video achieves a CTR of 11.88% and the highest engagement rate at 13.74%.
+3. **Conversion rate is highest for Stories.** Stories convert at 5.52%, followed by Video at 5.22%, Carousel at 5.05% and Image at 4.91%.
+4. **Female users drive engagement.** Women account for 43.44% of engagement, followed by the "All" (non-specified) category at 34.84% and males at 21.73%.
+5. **Engagement peaks in the 25–35 age range.** The age distribution shows a clear concentration of engagement among users aged 25 to 35.
+
+### Instagram (Page 2)
+
+6. **Carousel leads on Instagram.** Carousel generates the most impressions (38.9K) and the highest engagement rate on this platform.
+7. **Image achieves the highest CTR on Instagram.** Image records a CTR of 12.17%, the highest among all ad types on Instagram.
+8. **Gender split is more balanced.** Female engagement is 36.89%, "All" is 36.51% and male is 26.59%.
+9. **Video volume is significantly lower.** Video accounts for only 10.3K impressions on Instagram, compared to 45.8K on Facebook.
+
+### Cross-Platform Observations
+
+10. **CTR is slightly higher on Instagram.** Instagram achieves an overall CTR of 11.86% versus 11.76% on Facebook.
+11. **Purchase rate is lower on Instagram.** At 0.57% versus 0.61% on Facebook, Instagram converts fewer viewers into buyers.
+12. **Hourly trend is relatively flat on both platforms.** Engagement fluctuates modestly across hours, suggesting broad time-zone coverage in the audience.
+13. **Purchase rate remains low overall.** At 0.57–0.61%, the funnel narrows significantly after the click stage.
+
+### Areas for Further Analysis
+
+- Drill into conversion rate by campaign to identify top and bottom performers.
+- Cross-analyze ad type and platform to find optimal combinations.
+- Investigate the "All" gender category to determine if it represents missing data or a targeting choice.
+
+---
+
+## 12. Technical Architecture
+
+```text
+CSV files (local)
+        |
+        v
+Power Query (import, cleaning, typing)
+        |
+        v
+Star schema (ad_events fact, ads, users, campaigns, Calendar)
+        |
+        v
+DAX measures (counts, rates, field parameter, calendar columns)
+        |
+        v
+Power BI Desktop report (2 pages: Facebook and Instagram)
+        |
+        v
+Power BI Service
+        |
+        v
+On-premises Data Gateway (standard mode)
+        |
+        v
+Scheduled refresh: 11:30 AM and 5:00 PM (South Africa time, UTC+2)
