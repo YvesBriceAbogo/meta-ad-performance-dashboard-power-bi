@@ -1,0 +1,119 @@
+// =============================================================================
+// DAX MEASURES — Meta Ad Performance Dashboard
+// =============================================================================
+// All measures are created in the ad_events table unless otherwise noted.
+// =============================================================================
+
+
+// -----------------------------------------------------------------------------
+// EVENT COUNT MEASURES
+// Each measure counts rows in ad_events where event_type matches a specific
+// value. Using COUNTROWS(FILTER(...)) makes the logic explicit and auditable.
+// -----------------------------------------------------------------------------
+
+// Impressions: total number of Impression events
+Impressions =
+    COUNTROWS(
+        FILTER( ad_events, ad_events[event_type] = "Impression" )
+    )
+
+// Clicks: total number of Click events
+Clicks =
+    COUNTROWS(
+        FILTER( ad_events, ad_events[event_type] = "Click" )
+    )
+
+// Shares: total number of Share events
+Shares =
+    COUNTROWS(
+        FILTER( ad_events, ad_events[event_type] = "Share" )
+    )
+
+// Comments: total number of Comment events
+Comments =
+    COUNTROWS(
+        FILTER( ad_events, ad_events[event_type] = "Comment" )
+    )
+
+// Purchases: total number of Purchase events
+Purchases =
+    COUNTROWS(
+        FILTER( ad_events, ad_events[event_type] = "Purchase" )
+    )
+
+// Likes: total number of Like events
+Likes =
+    COUNTROWS(
+        FILTER( ad_events, ad_events[event_type] = "Like" )
+    )
+
+
+// -----------------------------------------------------------------------------
+// COMPOSITE METRIC
+// Engagement combines Clicks, Shares and Comments.
+// Likes and Purchases are excluded by design:
+//   - Likes are passive interactions (lower intent signal).
+//   - Purchases are a conversion metric, tracked separately.
+// -----------------------------------------------------------------------------
+
+Engagement =
+    [Clicks] + [Shares] + [Comments]
+
+
+// -----------------------------------------------------------------------------
+// RATE MEASURES
+// All rates use DIVIDE() to handle zero-denominator scenarios gracefully.
+// When the denominator is zero, DIVIDE returns BLANK() by default.
+// -----------------------------------------------------------------------------
+
+// CTR (Click-Through Rate): proportion of impressions that led to a click
+CTR (ClickThrough Rate) =
+    DIVIDE( [Clicks], [Impressions] )
+
+// Engagement Rate: proportion of impressions that generated engagement
+Engagement Rate =
+    DIVIDE( [Engagement], [Impressions] )
+
+// Conversion Rate: proportion of clicks that led to a purchase
+Conversion Rate =
+    DIVIDE( [Purchases], [Clicks] )
+
+// Purchase Rate: proportion of impressions that led to a purchase
+Purchase Rate =
+    DIVIDE( [Purchases], [Impressions] )
+
+
+// -----------------------------------------------------------------------------
+// BUDGET MEASURES
+// These measures reference the campaigns table.
+// Note: budget is at the campaign level only; there is no per-ad or per-event
+// cost data available in this dataset.
+// -----------------------------------------------------------------------------
+
+// Total Budget: sum of all campaign budgets in the current filter context
+Total Budget =
+    SUM( campaigns[total_budget] )
+
+// Avg Budget per Campaign: average budget across campaigns in context
+Avg Budget per Campaign =
+    AVERAGE( campaigns[total_budget] )
+
+
+// -----------------------------------------------------------------------------
+// DYNAMIC TITLE
+// Returns the label corresponding to the selected field parameter value.
+// Used as a dynamic title in visuals controlled by the field parameter.
+// Uses SWITCH instead of nested IF for readability and performance.
+// -----------------------------------------------------------------------------
+
+Dynamic Title =
+    SWITCH(
+        SELECTEDVALUE( 'Select Dynamic Measure'[Select Dynamic Measure Order] ),
+        0, "Impressions",
+        1, "Engagement",
+        2, "Clicks",
+        3, "Shares",
+        4, "Comments",
+        5, "Purchases",
+        BLANK()
+    )
