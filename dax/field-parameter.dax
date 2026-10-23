@@ -1,0 +1,29 @@
+// =============================================================================
+// FIELD PARAMETER — Select Dynamic Measure
+// =============================================================================
+// This table is created automatically by Power BI when using the
+// "New Parameter → Fields" feature (Modeling tab).
+//
+// It allows users to dynamically switch between six measures in a single
+// visual using a slicer, avoiding the need to duplicate charts.
+//
+// Structure:
+//   Column 1 — Display label (text shown in the slicer)
+//   Column 2 — Reference to the measure (NAMEOF)
+//   Column 3 — Sort order (integer)
+//
+// To recreate manually:
+//   1. Go to Modeling → New Parameter → Fields.
+//   2. Add the six measures listed below.
+//   3. The generated DAX should match this definition.
+// =============================================================================
+
+Select Dynamic Measure =
+    {
+        ( "Impressions", NAMEOF( 'ad_events'[Impressions] ), 0 ),
+        ( "Engagement",  NAMEOF( 'ad_events'[Engagement] ),  1 ),
+        ( "Clicks",      NAMEOF( 'ad_events'[Clicks] ),      2 ),
+        ( "Shares",      NAMEOF( 'ad_events'[Shares] ),      3 ),
+        ( "Comments",    NAMEOF( 'ad_events'[Comments] ),     4 ),
+        ( "Purchases",   NAMEOF( 'ad_events'[Purchases] ),    5 )
+    }
