@@ -1,0 +1,24 @@
+# =============================================================================
+# .gitignore — Meta Ad Performance Dashboard
+# =============================================================================
+
+# ----- OS files -----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ----- Power BI -----
+# Temporary files created by Power BI Desktop
+*.pbit
+*.pbix.tmp
+*.pbix~
+
+# ----- Editor and IDE files -----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ----- Git folder placeholders -----
+# .gitkeep files are used only to create empty folders in Git.
