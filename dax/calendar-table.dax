@@ -1,0 +1,58 @@
+// =============================================================================
+// CALENDAR TABLE — Calculated table and computed columns
+// =============================================================================
+// This table is created via Modeling → New Table in Power BI Desktop.
+// The computed columns are added via Modeling → New Column while the
+// Calendar table is selected.
+// =============================================================================
+
+
+// -----------------------------------------------------------------------------
+// Calculated Table: Calendar
+// Generates a continuous date range from the earliest to the latest event date.
+// This ensures every date in the range has a row, even if no events occurred.
+// -----------------------------------------------------------------------------
+
+Calendar =
+    CALENDAR(
+        MIN( ad_events[Date] ),
+        MAX( ad_events[Date] )
+    )
+
+
+// -----------------------------------------------------------------------------
+// Computed Columns (added to the Calendar table)
+// Each column below is created separately via Modeling → New Column.
+// -----------------------------------------------------------------------------
+
+// Month Name: abbreviated month label (e.g., "Jan", "Feb")
+// Used for the month slicer and calendar matrix.
+Month Name =
+    FORMAT( 'Calendar'[Date], "MMM" )
+
+// Year Month_num: month number (1–12)
+// Used to sort Month Name in chronological order.
+Year Month_num =
+    MONTH( 'Calendar'[Date] )
+
+// Day Name: abbreviated day label (e.g., "Mon", "Tue")
+// Used in the calendar matrix header row.
+Day Name =
+    FORMAT( 'Calendar'[Date], "ddd" )
+
+// Month Day_num: day of the month (1–31)
+// Used in the calendar matrix cells.
+Month Day_num =
+    DAY( 'Calendar'[Date] )
+
+// Week Day_num: day of the week as a number (1 = Monday, 7 = Sunday)
+// The second argument (2) sets Monday as the first day of the week.
+// Used to position days correctly in the calendar matrix.
+Week Day_num =
+    WEEKDAY( 'Calendar'[Date], 2 )
+
+// Year Week_num: week number of the year (ISO-style, Monday start)
+// The second argument (2) sets Monday as the first day of the week.
+// Used as the row axis in the weekly engagement trend visual.
+Year Week_num =
+    WEEKNUM( 'Calendar'[Date], 2 )
